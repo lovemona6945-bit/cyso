@@ -1,0 +1,20 @@
+{
+  "name": "cyso-zimbabwe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CYSo Christian Youth and Student Outing website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check site.js && node --check admin.js"
+  },
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "multer": "^2.0.2"
+  }
+}

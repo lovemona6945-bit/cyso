@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b2d">
+  <meta name="description" content="CYSo event administration. Sign in to manage outings and registrations.">
+  <title>Admin — Manage CYSo Outings</title>
+  <link rel="stylesheet" href="/site.css">
+  <script src="/site.js" defer></script>
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><nav class="nav wrap" aria-label="Main navigation">
+    <a class="brand" href="/" aria-label="CYSo home"><img class="brand-mark" src="/uploads/cyso-logo.png" alt="CYSo logo" width="39" height="39"><span>CYSo<small>CHRISTIAN YOUTH &amp; STUDENT OUTING</small></span></a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <div class="nav-links" id="navLinks"><a href="/">Home</a><a href="/about">About</a><a href="/events">Outings</a><a href="/register">Register</a><a class="button button-small" href="/admin" aria-current="page">Admin sign in <span aria-hidden="true">↗</span></a></div>
+  </nav></header>
+  <main>
+    <section class="page-banner"><div class="wrap"><div class="eyebrow">For the organizers</div><h1>Event admin.</h1><p>Sign in to manage shared outings, review registrations, and upload event images or videos.</p></div></section>
+    <section class="admin page-content">
+      <div class="wrap"><div class="admin-panel">
+        <div class="admin-notice"><strong>Secure access:</strong> admin passwords are stored as salted hashes on the server. Sign out after managing events on shared devices.</div>
+        <form class="admin-login" id="adminLogin">
+          <div class="field"><label for="adminPass">Admin password</label><input id="adminPass" type="password" autocomplete="current-password" required maxlength="128"></div>
+          <button type="submit" class="button button-dark button-small">Sign in</button>
+          <span class="form-message" id="adminMessage" role="status"></span>
+        </form>
+        <div id="adminTools" hidden>
+          <div class="admin-login" style="margin-top:20px"><button type="button" class="button button-outline button-small" id="adminLogout">Sign out</button></div>
+          <div class="admin-columns" style="margin-top:25px">
+            <div>
+              <h3>Change admin password</h3>
+              <form class="admin-form" id="passwordForm">
+                <div class="field"><label for="currentPassword">Current password *</label><input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required maxlength="128"></div>
+                <div class="field"><label for="newPassword">New password *</label><input id="newPassword" name="newPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></div>
+                <button class="button button-dark button-small" type="submit">Change password</button>
+                <span class="form-message" id="passwordMessage" role="status"></span>
+              </form>
+              <h3 style="margin-top:28px">Add an outing</h3>
+              <form class="admin-form" id="eventForm">
+                <div class="field"><label for="eventTitle">Event name *</label><input id="eventTitle" name="title" required maxlength="100" placeholder="e.g. Palawani Fellowship Outing"></div>
+                <div class="field"><label for="eventLocation">Location *</label><input id="eventLocation" name="location" required maxlength="100" placeholder="Town or venue"></div>
+                <div class="field"><label for="eventDate">Date (if confirmed)</label><input id="eventDate" name="date" type="date"></div>
+                <div class="field"><label for="eventStatus">Event status</label><select id="eventStatus" name="status"><option value="upcoming">Upcoming</option><option value="current">Happening now</option><option value="past">Past event</option></select></div>
+                <div class="field field-wide"><label for="eventDescription">Description</label><textarea id="eventDescription" name="description" maxlength="400" placeholder="Share a little about the outing"></textarea></div>
+                <div class="field field-wide"><label for="eventInstitutions">Participating institutions</label><input id="eventInstitutions" name="institutions" placeholder="Separate names with commas"></div>
+                <div class="field field-wide"><label for="eventMedia">Event image or video (optional)</label><input id="eventMedia" name="media" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,video/mp4,video/webm,video/quicktime"></div>
+                <button class="button button-dark" type="submit">Add event</button>
+              </form>
+            </div>
+            <div>
+              <h3>Manage events</h3><div class="admin-list" id="adminEventList"></div>
+              <h3 style="margin-top:26px">Event registrations</h3><div class="admin-list" id="adminRegistrationList"></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="footer-inner wrap"><a class="brand" href="/"><img class="brand-mark" src="/uploads/cyso-logo.png" alt="CYSo logo" width="39" height="39"><span>CYSo<small>FAITH · FELLOWSHIP · OUTINGS</small></span></a><p>Made for students, with faith at the heart. &copy; <span id="year"></span> CYSo Zimbabwe.</p><div class="footer-links"><a href="/">Home</a><a href="/about">About</a><a href="/events">Outings</a></div></div></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

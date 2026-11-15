@@ -1,0 +1,22 @@
+[
+  {
+    "id": "palawani-next",
+    "title": "CYSo Palawani Lakeworld Outing",
+    "location": "Palawani Lakeworld Resort, Zvishavane",
+    "date": "2026-11-28",
+    "status": "upcoming",
+    "description": "28-29 November 2026. Theme: Earnestly contending for the faith and Christian values (Jude 1:3). Join us for prayer, worship, fellowship, teaching, testimonies, games and outdoor activities.",
+    "institutions": [],
+    "media": "cyso-palawani-poster.png"
+  },
+  {
+    "id": "harare-gathering",
+    "title": "Harare Fellowship Gathering",
+    "location": "Harare, Zimbabwe",
+    "date": "",
+    "status": "past",
+    "description": "CYSo’s recent Harare gathering brought Christian students together for fellowship, prayer and worship.",
+    "institutions": [],
+    "media": null
+  }
+]
