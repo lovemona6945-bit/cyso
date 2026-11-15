@@ -30,6 +30,7 @@ const sessions = new Map();
 const passwordOptions = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 
 let database;
+let environmentAdminCredential;
 
 if (configuredAdminPassword !== undefined && (configuredAdminPassword.length < 12 || configuredAdminPassword.length > 128)) {
   throw new Error("ADMIN_PASSWORD must be between 12 and 128 characters.");
@@ -87,6 +88,9 @@ async function initialize() {
     fs.mkdir(persistentDirectory, { recursive: true }),
     fs.mkdir(uploadDirectory, { recursive: true })
   ]);
+  environmentAdminCredential = configuredAdminPassword
+    ? await hashPassword(configuredAdminPassword)
+    : null;
   const [legacyEvents, legacyRegistrations, legacyAdminCredential] = await Promise.all([
     readJson(eventsFile, seedEvents),
     readJson(registrationsFile, []),
@@ -147,9 +151,7 @@ async function initialize() {
   let firstPassword;
   if (!migrate.get()) {
     firstPassword = configuredAdminPassword || (legacyAdminCredential ? null : crypto.randomBytes(24).toString("base64url"));
-    const adminCredential = configuredAdminPassword
-      ? await hashPassword(configuredAdminPassword)
-      : legacyAdminCredential || await hashPassword(firstPassword);
+    const adminCredential = environmentAdminCredential || legacyAdminCredential || await hashPassword(firstPassword);
     const insertEvent = database.prepare(`
       INSERT OR IGNORE INTO events (id, title, location, date, status, description, institutions, media, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -207,6 +209,10 @@ async function initialize() {
     console.log("Imported existing CYSo JSON records into SQLite.");
   }
 
+  if (environmentAdminCredential) {
+    database.prepare("UPDATE admin_credentials SET salt = ?, hash = ? WHERE id = 1")
+      .run(environmentAdminCredential.salt, environmentAdminCredential.hash);
+  }
   const storedCredential = database.prepare("SELECT salt, hash FROM admin_credentials WHERE id = 1").get();
   if (!storedCredential) throw new Error("The SQLite database does not contain an admin credential.");
   if (firstPassword) {
@@ -421,7 +427,7 @@ app.get("/api/admin/session", (request, response) => {
   const expiresAt = sessions.get(token);
   const authenticated = Boolean(token && expiresAt && expiresAt > Date.now());
   if (!authenticated) sessions.delete(token);
-  response.json({ authenticated });
+  response.json({ authenticated, passwordManaged: Boolean(configuredAdminPassword) });
 });
 
 app.post("/api/admin/login", loginLimiter, async (request, response, next) => {
@@ -430,12 +436,12 @@ app.post("/api/admin/login", loginLimiter, async (request, response, next) => {
     return response.status(400).json({ error: "Enter your admin password." });
   }
   try {
-    const credential = database.prepare("SELECT salt, hash FROM admin_credentials WHERE id = 1").get();
+    const credential = environmentAdminCredential || database.prepare("SELECT salt, hash FROM admin_credentials WHERE id = 1").get();
     if (!(await verifyPassword(password, credential))) {
       return response.status(401).json({ error: "That password was not correct." });
     }
     issueSession(response);
-    response.json({ authenticated: true });
+    response.json({ authenticated: true, passwordManaged: Boolean(configuredAdminPassword) });
   } catch (error) {
     next(error);
   }
@@ -447,6 +453,11 @@ app.post("/api/admin/logout", requireAdmin, (request, response) => {
 });
 
 app.post("/api/admin/password", requireAdmin, async (request, response, next) => {
+  if (configuredAdminPassword !== undefined) {
+    return response.status(409).json({
+      error: "The admin password is managed by Render. Update the ADMIN_PASSWORD secret and redeploy."
+    });
+  }
   const { currentPassword, newPassword } = request.body;
   if (typeof currentPassword !== "string" || typeof newPassword !== "string" || newPassword.length < 12 || newPassword.length > 128) {
     return response.status(400).json({ error: "Choose a new password between 12 and 128 characters." });

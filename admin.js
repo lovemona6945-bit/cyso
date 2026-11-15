@@ -23,9 +23,11 @@
     return item;
   }
 
-  function setAuthenticated(authenticated) {
+  function setAuthenticated(authenticated, passwordManaged = false) {
     $("#adminLogin").hidden = authenticated;
     $("#adminTools").hidden = !authenticated;
+    $("#passwordForm").hidden = passwordManaged;
+    $("#passwordManagedNotice").hidden = !passwordManaged;
     if (!authenticated) $("#adminPass").value = "";
   }
 
@@ -96,12 +98,12 @@
   $("#adminLogin").addEventListener("submit", async (event) => {
     event.preventDefault();
     try {
-      await CYSo.api("/api/admin/login", {
+      const session = await CYSo.api("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: $("#adminPass").value })
       });
-      setAuthenticated(true);
+      setAuthenticated(true, session.passwordManaged);
       $("#adminMessage").textContent = "Signed in.";
       await renderAdmin();
     } catch (error) {
@@ -152,7 +154,7 @@
   });
 
   CYSo.api("/api/admin/session").then(async (session) => {
-    setAuthenticated(session.authenticated);
+    setAuthenticated(session.authenticated, session.passwordManaged);
     if (session.authenticated) await renderAdmin();
   }).catch((error) => {
     $("#adminMessage").textContent = error.message;
