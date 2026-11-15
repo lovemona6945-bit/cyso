@@ -14,11 +14,15 @@ const scrypt = promisify(crypto.scrypt);
 const app = express();
 const root = __dirname;
 const dataDirectory = path.join(root, "data");
-const uploadDirectory = path.join(root, "uploads");
-const databaseFile = path.join(dataDirectory, "cyso.sqlite");
+const persistentDirectory = process.env.DATA_DIR || dataDirectory;
+const uploadDirectory = process.env.UPLOAD_DIR || (process.env.DATA_DIR
+  ? path.join(persistentDirectory, "uploads")
+  : path.join(root, "uploads"));
+const databaseFile = path.join(persistentDirectory, "cyso.sqlite");
 const eventsFile = path.join(dataDirectory, "events.json");
 const registrationsFile = path.join(dataDirectory, "registrations.json");
 const adminFile = path.join(dataDirectory, "admin.json");
+const configuredAdminPassword = process.env.ADMIN_PASSWORD;
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || (process.env.NODE_ENV === "production" || process.env.PORT || process.env.RENDER ? "0.0.0.0" : "127.0.0.1");
 const sessionLifetime = 12 * 60 * 60 * 1000;
@@ -26,6 +30,10 @@ const sessions = new Map();
 const passwordOptions = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 
 let database;
+
+if (configuredAdminPassword !== undefined && (configuredAdminPassword.length < 12 || configuredAdminPassword.length > 128)) {
+  throw new Error("ADMIN_PASSWORD must be between 12 and 128 characters.");
+}
 
 const seedEvents = [
   {
@@ -76,7 +84,7 @@ async function verifyPassword(password, credential) {
 
 async function initialize() {
   await Promise.all([
-    fs.mkdir(dataDirectory, { recursive: true }),
+    fs.mkdir(persistentDirectory, { recursive: true }),
     fs.mkdir(uploadDirectory, { recursive: true })
   ]);
   const [legacyEvents, legacyRegistrations, legacyAdminCredential] = await Promise.all([
@@ -138,8 +146,10 @@ async function initialize() {
   const migrate = database.prepare("SELECT value FROM app_meta WHERE key = 'legacy_json_migrated'");
   let firstPassword;
   if (!migrate.get()) {
-    firstPassword = legacyAdminCredential ? null : crypto.randomBytes(24).toString("base64url");
-    const adminCredential = legacyAdminCredential || await hashPassword(firstPassword);
+    firstPassword = configuredAdminPassword || (legacyAdminCredential ? null : crypto.randomBytes(24).toString("base64url"));
+    const adminCredential = configuredAdminPassword
+      ? await hashPassword(configuredAdminPassword)
+      : legacyAdminCredential || await hashPassword(firstPassword);
     const insertEvent = database.prepare(`
       INSERT OR IGNORE INTO events (id, title, location, date, status, description, institutions, media, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -200,9 +210,13 @@ async function initialize() {
   const storedCredential = database.prepare("SELECT salt, hash FROM admin_credentials WHERE id = 1").get();
   if (!storedCredential) throw new Error("The SQLite database does not contain an admin credential.");
   if (firstPassword) {
-    console.log("\nCYSo first-run admin password (shown only once):");
-    console.log(`${firstPassword}\n`);
-    console.log("Save this password, sign in at /admin, then change it in the admin panel.\n");
+    if (configuredAdminPassword) {
+      console.log("\nCYSo admin password initialized from ADMIN_PASSWORD.");
+    } else {
+      console.log("\nCYSo first-run admin password (shown only once):");
+      console.log(`${firstPassword}\n`);
+      console.log("Save this password, sign in at /admin, then change it in the admin panel.\n");
+    }
   }
 }
 
